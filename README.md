@@ -42,7 +42,7 @@ Example:
 ```
 
 #### 2. **Implication Introduction (→I)**
-Derives an implication $ f \to \phi $ by removing $f$ from the assumptions:
+Derives an implication $f \to \phi$ by removing $f$ from the assumptions:
 
 ```ocaml
 val imp_i : formula -> theorem -> theorem
