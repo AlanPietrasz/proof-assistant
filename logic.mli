@@ -1,8 +1,17 @@
-(* Representation of formulas *)
+type var = string
+type sym = string
+
+(** Representation of terms *)
+type term =
+| Var of var
+| Sym of sym * term list
+
+(** Representation of formulas *)
 type formula =
-| Var of string
 | Bot
 | Imp of formula * formula
+| Rel of sym * term list
+| All of var * formula
 
 val pp_print_formula : Format.formatter -> formula -> unit
 

@@ -1,19 +1,53 @@
+type var = string
+type sym = string
+
+type term =
+| Var of var
+| Sym of sym * term list
+
 type formula =
-| Var of string
+(* | Var of string *)
 | Bot
+(* | Not of formula
+| And of formula * formula
+| Or  of formula * formula  *)
 | Imp of formula * formula
+| Rel of sym * term list
+| All of var * formula
+
+let concat_parentheses s = "(" ^ s ^ ")"
+let rec string_of_term t =
+  match t with
+  | Var v -> v
+  | Sym(s, ts) ->
+      s ^
+      if ts = [] then ""
+      else
+        List.map string_of_term ts |>
+        String.concat ", " |>
+        concat_parentheses
 
 let rec string_of_formula f =
   match f with
   | Bot -> "⊥"
-  | Var v -> v
+  | Rel(r, ts) -> 
+      r ^
+      if ts = [] then ""
+      else
+        List.map string_of_term ts |>
+        String.concat ", " |>
+        concat_parentheses
+  (* | Var v -> v *)
   | Imp(l, r) ->
       let l_str = string_of_formula l in
       let r_str = string_of_formula r in
         (match l with
-        | Bot | Var _ -> l_str
-        | Imp(_, _) -> "(" ^ l_str ^ ")")
-        ^ " → " ^ r_str
+        | Imp(_, _) | All(_, _) -> concat_parentheses l_str
+        | _ -> l_str) ^ 
+        " → " ^ 
+        r_str
+  | All(v, f) ->
+      "∀" ^ v ^ "." ^ string_of_formula f
 
 
 let compare_formulas left right = 
