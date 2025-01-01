@@ -1,6 +1,6 @@
 (*
 utop logic.cmo proof.cmo
-#use "clean_test.ml";;
+#use "proof_test.ml";;
 *)
 
 
