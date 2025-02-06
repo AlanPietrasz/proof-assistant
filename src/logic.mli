@@ -23,16 +23,24 @@ type formula =
 val free_in_term    : var -> term -> bool
 val free_in_formula : var -> formula -> bool
 
-(** Substitution in terms and formulas *)
+(* Substitution in terms and formulas *)
 (** TODO: make cleaner documentation
   PLACEHOLDER DOCUMENTATION:
-  subst_in_formula x t φ substitute all occurences of variable x with term t in φ:
+  [subst_in_formula x t φ] substitute all occurences of variable x with term t in φ:
   φ{x → t}
- *)
+  *)
 val subst_in_formula : var -> term -> formula -> formula
 
+(** TODO: make cleaner documentation
+  PLACEHOLDER DOCUMENTATION:
+  [subst_in_term x t t'] substitute all occurences of variable x with term t in t': 
+  t'{x → t}
+  *)
 val subst_in_term : var -> term -> term -> term
 
+val eq_formula : formula -> formula -> bool
+
+(** Pretty-printing of formulas *)
 val pp_print_formula : Format.formatter -> formula -> unit
 
 module type Theory = sig
@@ -44,6 +52,10 @@ module Make : functor (T : Theory) -> sig
 
   (** Representation of theorems *)
   type theorem
+
+  (** Comparison of theorems
+    TODO: implement better version in the future *)
+  val eq_theorem : theorem -> theorem -> bool
 
   (** Extract assumptions Γ from a theorem Γ ⊢ φ. *)
   val assumptions : theorem -> formula list

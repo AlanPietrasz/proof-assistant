@@ -1,21 +1,19 @@
-(*
-utop logic.cmo
-#use "test_logic_first_order.ml";;
-*)
-
-#install_printer Logic.pp_print_formula ;;
-#install_printer Logic.pp_print_theorem ;;
-
-open Logic
-
 (* 
-~p === p → ⊥
-~(p → ~q) === p ^ q
-(p → (q → ⊥)) → ⊥ === p ^ q
+dune utop src 
+#use "test/test_pp_utop.ml";;
 *)
+
+
+open Proof_assistant.Logic;;
+#install_printer pp_print_formula ;;
+
+open Proof_assistant.Peano;;
+module LogicPeano = Make(Peano);;
+
+open LogicPeano;;
+#install_printer pp_print_theorem ;;
 
 (** Pretty print test *)
-
 let neg_f p = Imp(p, Bot)
 let and_f p q =
   neg_f (Imp(p, neg_f q))
@@ -33,6 +31,5 @@ let f_t2 =
       (All("x", phi))
       (All("x", psi))
   )
-
 
 

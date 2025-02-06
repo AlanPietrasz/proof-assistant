@@ -1,0 +1,14 @@
+(env
+  (dev (flags (:standard -warn-error -32-33))))
+
+(test
+ (name test_logic_propositional_calculus)
+ (libraries proof_assistant alcotest))
+
+(test
+ (name test_logic_first_order_pp)
+ (libraries proof_assistant alcotest))
+
+; (test
+;  (name test_lemma_2)
+;  (libraries proof_assistant alcotest))

@@ -48,18 +48,22 @@ let fresh_var () =
 (** Stub of parallel substitution in term. *)
 (* val psubst_in_term : term VarMap.t -> term -> term *)
 let psubst_in_term map t =
+  ignore map;
+  ignore t;
   failwith "Not implemented"
   
 (** Stub of parallel substitution in formula. *)
 (* val psubst_in_formula : term VarMap.t -> formula -> formula *)
-let psubst_in_ map phi =
+let psubst_in_formula map phi =
+  ignore map;
+  ignore phi;
   failwith "Not implemented"
 
 let subst_in_term x t t' =
   psubst_in_term (VarMap.singleton x t) t'
   
 let subst_in_formula x t phi =
-  psubst_in_term (VarMap.singleton x t) phi
+  psubst_in_formula (VarMap.singleton x t) phi
 
 let concat_parentheses s = "(" ^ s ^ ")"
 
@@ -97,7 +101,7 @@ let rec string_of_formula f =
       "∀" ^ v ^ "." ^ string_of_formula f
 
 (** This is not working properly for changing names of variables *)
-let compare_formulas left right = 
+let eq_formula left right = 
   String.equal (string_of_formula left) (string_of_formula right)
 
 
@@ -109,8 +113,15 @@ module Make (T : Theory) = struct
 
   type theorem = formula list * formula
 
+
   let assumptions thm = fst thm 
   let conclusion thm = snd thm
+
+  let eq_theorem th1 th2 =
+    (* TODO: add checking equality of sets of assumptions but for now we
+      will check if they are empty  *)
+    eq_formula (conclusion th1) (conclusion th2) &&
+    (assumptions th1 = [] && assumptions th2 = [])
 
 
   let pp_print_theorem fmtr thm =
@@ -158,9 +169,13 @@ module Make (T : Theory) = struct
     | _ -> failwith "The theorem does not conclude with ⊥"
 
   let forall_i x thm =
+    ignore x;
+    ignore thm;
     failwith "Not implemented (∀I)"
 
   let forall_e th tm =
+    ignore th;
+    ignore tm;
     failwith "Not implemented (∀E)"
 
   let axiom (ax : T.axiom) : theorem =
@@ -168,20 +183,48 @@ module Make (T : Theory) = struct
     ([], f)
 
 
-  let and_i th1 th2 = failwith "Not implemented (∧I)"
-  let and_e1 th = failwith "Not implemented (∧E1)"
-  let and_e2 th = failwith "Not implemented (∧E2)"
+  let and_i th1 th2 = 
+    ignore th1;
+    ignore th2;
+    failwith "Not implemented (∧I)"
+  let and_e1 th = 
+    ignore th;
+    failwith "Not implemented (∧E1)"
+  let and_e2 th = 
+    ignore th;
+    failwith "Not implemented (∧E2)"
 
   let top_i () = failwith "Not implemented (⊤I)"
 
-  let or_i1 th f = failwith "Not implemented (∨I1)"
-  let or_i2 th f = failwith "Not implemented (∨I2)"
-  let or_e th th1 th2 = failwith "Not implemented (∨E)"
+  let or_i1 th f = 
+    ignore th;
+    ignore f;
+    failwith "Not implemented (∨I1)"
+  let or_i2 th f = 
+    ignore th;
+    ignore f;
+    failwith "Not implemented (∨I2)"
+  let or_e th th1 th2 = 
+    ignore th;
+    ignore th1;
+    ignore th2;
+    failwith "Not implemented (∨E)"
 
-  let exists_i th x t = failwith "Not implemented (∃I)"
-  let exists_e th x th2 = failwith "Not implemented (∃E)"
+  let exists_i th x t = 
+    ignore th;
+    ignore x;
+    ignore t;
+    failwith "Not implemented (∃I)"
+  let exists_e th x th2 = 
+    ignore th;
+    ignore x;
+    ignore th2;
+    failwith "Not implemented (∃E)"
 
-  let eq_elim th1 th2 = failwith "Not implemented (EqElim)"
+  let eq_elim th1 th2 = 
+    ignore th1;
+    ignore th2;
+    failwith "Not implemented (EqElim)"
 
 end
     

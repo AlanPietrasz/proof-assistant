@@ -1,9 +1,9 @@
-open Peano  (* definicja typu axiom, np. EqRefl, EqElim, PlusZ, PlusS, Induction *)
+open Proof_assistant.Peano  (* definicja typu axiom, np. EqRefl, EqElim, PlusZ, PlusS, Induction *)
 
-open Logic
+open Proof_assistant.Logic
 
 (* Tworzymy instancję logiki z teorią Peano *)
-module Logic = Logic.Make(Peano)
+module Logic = Make(Peano)
 
 (* Dla wygody "otwieramy" moduł L - wtedy reguły i typ theorem są w zasięgu *)
 open Logic
