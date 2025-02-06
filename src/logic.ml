@@ -158,7 +158,7 @@ module Make (T : Theory) = struct
   let imp_e th1 th2 = 
     match conclusion th1 with
     | Imp(phi, psi) -> 
-      if phi = conclusion th2
+      if eq_formula phi (conclusion th2)
         then (difference_of_lists (assumptions th1) (assumptions th2) @ assumptions th2, psi)
         else failwith "Conclusion of th2 does not match the antecedent of conclusion of th1 implication"
     | _ -> failwith "Theorem th1 does not have an implication as its conclusion"
