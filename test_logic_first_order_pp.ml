@@ -11,7 +11,7 @@ open Logic
 (* 
 ~p === p → ⊥
 ~(p → ~q) === p ^ q
-(p → (q → ⊥)) → ⊥
+(p → (q → ⊥)) → ⊥ === p ^ q
 *)
 
 (** Pretty print test *)
@@ -33,5 +33,6 @@ let f_t2 =
       (All("x", phi))
       (All("x", psi))
   )
+
 
 

@@ -1,13 +1,13 @@
 #!/bin/bash
 # Compile interface files
 ocamlc -c logic.mli
-ocamlc -c proof.mli
+ocamlc -c peano.mli
 
 # Compile implementation files
 ocamlc -c logic.ml
-ocamlc -c proof.ml
+ocamlc -c peano.ml
 
 
 # Link all files into an executable
-# ocamlc -o main logic.cmo proof.cmo
+# ocamlc -o main logic.cmo
 
