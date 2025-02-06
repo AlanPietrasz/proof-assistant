@@ -2,6 +2,8 @@ open Alcotest
 
 open Proof_assistant.Logic
 
+let var s = fresh_var ~base:s ()
+
 (** Pretty print test *)
 let neg_f p = Imp(p, Bot)
 let and_f p q =
@@ -15,10 +17,10 @@ let phi = (Rel("φ", []))
 let psi = (Rel("ψ", []))
 let f_t2 = 
   Imp(
-    All("x", and_f phi psi),
+    All(var "x", and_f phi psi),
     and_f
-      (All("x", phi))
-      (All("x", psi))
+      (All(var "x", phi))
+      (All(var "x", psi))
   )
 
 

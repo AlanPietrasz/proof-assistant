@@ -1,8 +1,22 @@
-type var = string
+(* logic.ml *)
+
+(** Unique ID for variables so that we never clash after "fresh" generation. *)
+let global_var_counter = ref 0
+
+(* type var = string *)
+
+(** Representation of a first-order variable. 
+    - [id] is a unique integer (for internal use). 
+    - [base_name] is the name the user might have given, or e.g. "x" for fresh ones. 
+*)
+type var = {
+  id        : int;
+  base_name : string;
+}
 
 module Var = struct
   type t = var
-  let compare = String.compare
+  let compare v1 v2 = compare v1.id v2.id
 end
 
 module VarMap = Map.Make(Var)
@@ -42,8 +56,11 @@ let rec free_in_formula x phi =
     if x = y then false
     else free_in_formula x phi
 
-let fresh_var () = 
-  failwith "Not implemented"
+let fresh_var ?(base="") () =
+  let n = !global_var_counter in
+  incr global_var_counter;
+  (* if base = "" then we want to generate new unique string *)
+  { id = n; base_name = base }
 
 (** Stub of parallel substitution in term. *)
 (* val psubst_in_term : term VarMap.t -> term -> term *)
@@ -67,9 +84,11 @@ let subst_in_formula x t phi =
 
 let concat_parentheses s = "(" ^ s ^ ")"
 
+let string_of_var (v : var) : string =
+  v.base_name
 let rec string_of_term t =
   match t with
-  | Var v -> v
+  | Var v -> string_of_var v
   | Sym(s, ts) ->
       s ^
       if ts = [] then ""
@@ -98,7 +117,7 @@ let rec string_of_formula f =
         " → " ^ 
         r_str
   | All(v, f) ->
-      "∀" ^ v ^ "." ^ string_of_formula f
+      "∀" ^ string_of_var v ^ "." ^ string_of_formula f
 
 (** This is not working properly for changing names of variables *)
 let eq_formula left right = 

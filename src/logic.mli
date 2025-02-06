@@ -1,10 +1,11 @@
 (** logic.mli *)
 
-type var = string
+(* type var = string *)
+type var
 type sym = string
 
 (** Generates a fresh variable *)
-val fresh_var : unit -> var
+val fresh_var : ?base:sym -> unit -> var
 
 (** Representation of terms in first-order logic *)
 type term =
@@ -15,7 +16,7 @@ type term =
 type formula =
   | Bot                          (** Falsum (⊥) *)
   | Imp of formula * formula     (** Implication (φ → ψ) *)
-  | Rel of sym * term list       (** Atomic predicate/ relation symbol r(t1,...,tn) *)
+  | Rel of sym * term list       (** Relation symbol r(t1,...,tn) *)
   | All of var * formula         (** Universal quantifier (∀x. φ) *)
   (** In the future we might add: And, Or, Exists, Top, etc. *)
 

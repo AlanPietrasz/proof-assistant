@@ -8,32 +8,36 @@ module Peano = struct
   | PlusS (* ∀n.∀m.S(n) + m = S(n + m) *)
   | Induction of var * formula (* φ{x → 0} => (∀n.φ{x → n} => φ{x → S(n)}) => ∀n. φ{x → n} *)
   (* ... pozostałe aksjomaty *)
-
+  
   let axiom ax =
     match ax with
     | EqRefl ->
-      let x = "x" (* -> fresh_var () *) in
+      let x = fresh_var ~base:"x" () in
       All(x, Rel("=", [Var x; Var x]))
 
-    | EqElim (x, phi) ->
-      let y = "y" in
-      let z = "z" in
+    | EqElim(x, phi) ->
+      let y = fresh_var ~base:"y" () in
+      let z = fresh_var ~base:"z" () in
       All(y, All(z,
-        Imp(Rel("=", [Var y; Var z]),
-              Imp(
-                subst_in_formula x (Var y) phi,
-                subst_in_formula x (Var z) phi
-              )
+        Imp(
+          Rel("=", [Var y; Var z]),
+          Imp(
+            subst_in_formula x (Var y) phi,
+            subst_in_formula x (Var z) phi
+          )
         )
       ))
 
     | PlusZ ->
-      let n = "n" in
-      All(n, Rel("=", [ Sym("z", []); Var n ]))
+      let n = fresh_var ~base:"n" () in
+      All(n, Rel("=", [
+        Sym("z", []);  (* 0 + n = n *)
+        Var n
+      ]))
 
     | PlusS ->
-      let n = "n" in
-      let m = "m" in
+      let n = fresh_var ~base:"n" () in
+      let m = fresh_var ~base:"m" () in
       All(n, All(m,
         Rel("=", [
           Sym("+", [ Sym("s", [Var n]); Var m ]);
@@ -41,8 +45,8 @@ module Peano = struct
         ])
       ))
 
-    | Induction (x, phi) ->
-      let n = "n" in
+    | Induction(x, phi) ->
+      let n = fresh_var ~base:"n" () in
       Imp(
         subst_in_formula x (Sym("z", [])) phi,
         Imp(
@@ -54,4 +58,4 @@ module Peano = struct
         )
       )
 end
-  
+
