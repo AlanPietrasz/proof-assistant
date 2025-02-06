@@ -14,6 +14,8 @@ type var = {
   base_name : string;
 }
 
+let eq_var v1 v2 = v1.id = v2.id
+
 module Var = struct
   type t = var
   let compare v1 v2 = compare v1.id v2.id
@@ -41,7 +43,7 @@ end
 (** Check if [x] is free in term [t]. *)
 let rec free_in_term x t =
   match t with
-  | Var y -> x = y
+  | Var y -> eq_var x y
   | Sym(_, ts) -> List.exists (free_in_term x) ts
 
 (** Check if [x] is free in formula [phi]. *)
@@ -53,7 +55,7 @@ let rec free_in_formula x phi =
     free_in_formula x psi
   | Rel(_, ts) -> List.exists (free_in_term x) ts
   | All(y, phi) -> 
-    if x = y then false
+    if eq_var x y then false
     else free_in_formula x phi
 
 let fresh_var ?(base="") () =
