@@ -4,6 +4,8 @@
 type var
 type sym = string
 
+val string_of_var : var -> string
+
 (** Generates a fresh variable *)
 val fresh_var : ?base:sym -> unit -> var
 
@@ -12,6 +14,8 @@ type term =
 | Var of var
 | Sym of sym * term list
 
+val string_of_term : term -> string
+
 (** Representation of formulas in first-order logic *)
 type formula =
   | Bot                          (** Falsum (⊥) *)
@@ -19,6 +23,8 @@ type formula =
   | Rel of sym * term list       (** Relation symbol r(t1,...,tn) *)
   | All of var * formula         (** Universal quantifier (∀x. φ) *)
   (** In the future we might add: And, Or, Exists, Top, etc. *)
+
+val string_of_formula : formula -> string
 
 (** Free-variable checks *)
 val free_in_term    : var -> term -> bool

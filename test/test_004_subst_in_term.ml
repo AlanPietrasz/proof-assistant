@@ -4,9 +4,9 @@ open Alcotest
 open Proof_assistant.Logic
 
 module TestSubstTerm = struct
-  let x = "x"
-  let y = "y"
-  let z = "z"
+  let x = fresh_var ~base:"x" ()
+  let y = fresh_var ~base:"y" ()
+  let z = fresh_var ~base:"z" ()
 
   let t_var_x = Var x
   let t_var_y = Var y

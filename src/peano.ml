@@ -31,7 +31,7 @@ module Peano = struct
     | PlusZ ->
       let n = fresh_var ~base:"n" () in
       All(n, Rel("=", [
-        Sym("z", []);  (* 0 + n = n *)
+        Sym("+", [Sym("z", []); Var n]);  (* 0 + n = n *)
         Var n
       ]))
 

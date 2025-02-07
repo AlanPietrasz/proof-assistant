@@ -9,27 +9,27 @@
  (name test_logic_first_order_pp)
  (libraries proof_assistant alcotest))
 
-; (test
-;  (name test_lemma_2)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_lemma_2)
+ (libraries proof_assistant alcotest))
 
 ;; TDD test files:
-; (test
-;  (name test_001_fresh_var)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_001_fresh_var)
+ (libraries proof_assistant alcotest))
 
-; (test
-;  (name test_002_free_vars)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_002_free_vars)
+ (libraries proof_assistant alcotest))
 
-; (test
-;  (name test_003_eq_formula)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_003_eq_formula)
+ (libraries proof_assistant alcotest))
 
-; (test
-;  (name test_004_subst_in_term)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_004_subst_in_term)
+ (libraries proof_assistant alcotest))
 
-; (test
-;  (name test_005_subst_in_formula)
-;  (libraries proof_assistant alcotest))
+(test
+ (name test_005_subst_in_formula)
+ (libraries proof_assistant alcotest))

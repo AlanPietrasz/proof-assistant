@@ -3,3 +3,7 @@
  (public_name proof-assistant)
  (libraries base stdlib)
  (modules logic peano))
+
+(env
+  (dev (flags (:standard -warn-error -32-33))))
+
