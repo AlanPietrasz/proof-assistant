@@ -10,8 +10,21 @@
  (libraries proof_assistant alcotest))
 
 (test
+ (name test_lemma_1)
+ (libraries proof_assistant alcotest))
+
+(test
  (name test_lemma_2)
  (libraries proof_assistant alcotest))
+
+; (test
+;  (name test_lemma_3)
+;  (libraries proof_assistant alcotest))
+
+;; Additional parser test:
+; (test
+;  (name test_logic_parser)
+;  (libraries proof_assistant alcotest))
 
 ;; TDD test files:
 (test

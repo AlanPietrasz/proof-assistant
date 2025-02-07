@@ -25,7 +25,7 @@ let eq_var v1 v2 = v1.id = v2.id
 (** For paralell substitution *)
 module VarMap = Map.Make(struct
   type t = var
-  let compare v1 v2 = compare v1.id v2.id (* v1.base_name v2.base_name *)
+  let compare v1 v2 = compare v1.base_name v2.base_name (* v1.base_name v2.base_name *)
 end)
 
 (** For set of variables *)
@@ -109,7 +109,10 @@ let rec psubst_in_term smap t =
       end
   | Sym(f, ts) ->
       Sym(f, List.map (psubst_in_term smap) ts)
-  
+
+
+module StringSet = Set.Make(String)
+
 (** In order to avoid capturing variables, we may need to rename bound variables. 
     The logic here follows the standard 3-case approach:
     1) If the bound variable is in [smap]'s domain, do nothing (no substitution).
@@ -138,15 +141,52 @@ let rec psubst_in_formula smap phi =
               smap 
               VarSet.empty
           in
+          let free_vars_body = fv_formula body in
+          let all_vars_to_avoid = VarSet.union all_subst_vars free_vars_body in
+
           if VarSet.mem y all_subst_vars then
             (* We rename y -> y_something. Then apply smap to the renamed body. *)
-            let y' = fresh_var ~base:(y.base_name^string_of_int !global_var_counter) () in
+            (* let y' = fresh_var ~base:(y.base_name^string_of_int !global_var_counter) () in
             let rename_map = VarMap.singleton y (Var y') in
             let body_renamed = psubst_in_formula rename_map body in
-            All(y', go body_renamed)
+            All(y', go body_renamed) *)
+            rename_and_go y body all_vars_to_avoid
           else
             (* case 2: y is not in smap's domain and also not free in sub. Just recurse. *)
             All(y, go body)
+
+  and rename_and_go (y : var) (body : formula) (vars_to_avoid : VarSet.t) =
+  (* We rename y to a brand-new var y'. 
+    y' must have a base name not in the base names of 'vars_to_avoid'. *)
+  let used_base_names =
+    VarSet.fold (fun v acc -> StringSet.add v.base_name acc)
+                vars_to_avoid
+                StringSet.empty
+  in
+
+  let y' = pick_fresh_base y.base_name used_base_names in
+  (* Now rename the old bound variable [y -> y'] in the body, THEN do 'go' on the result.*)
+  let rename_map = VarMap.singleton y (Var y') in
+  let body_renamed = psubst_in_formula rename_map body in
+  All(y', go body_renamed)
+
+  and pick_fresh_base (base : string) (used : StringSet.t) : var =
+  (* Try base, base', base'', base_1, etc., until we find a textual name 
+    that is not in the set [used]. Then call fresh_var on it. *)
+  let rec loop attempt i =
+    let candidate =
+      if i = 0 then attempt
+      else if i = 1 then Printf.sprintf "%s'" attempt
+      else if i = 2 then Printf.sprintf "%s''" attempt
+      else Printf.sprintf "%s_%d" attempt (i-2)
+    in
+    if StringSet.mem candidate used then
+      loop attempt (i + 1)
+    else
+      fresh_var ~base:candidate ()
+  in
+  loop base 0
+
   in
   go phi
 
@@ -336,7 +376,7 @@ module Make (T : Theory) = struct
       failwith (Printf.sprintf
         "forall_e: conclusion is not a universal formula. It is: %s"
         (string_of_formula (conclusion thm)))
-        
+
   let axiom (ax : T.axiom) : theorem =
     let f = T.axiom ax in
     ([], f)

@@ -58,7 +58,7 @@ module TestSubstFormula = struct
       (eq_formula substituted ally_rxy);
 
     check string "" 
-      "∀y3.r(f(y), y3)" substituted_str
+      "∀y'.r(f(y), y')" substituted_str
 end
 
 let suite = [
