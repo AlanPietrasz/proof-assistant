@@ -1,13 +1,16 @@
 (* logic.ml *)
 
-(** Unique ID for variables so that we never clash after "fresh" generation. *)
+(** A global counter to generate fresh variable IDs. *)
 let global_var_counter = ref 0
 
 (** Representation of a first-order variable. 
     - [id] is a unique integer (for internal use). 
     - [base_name] is the name the user might have given, or e.g. "x" for fresh ones. 
 
-    Two varibles can have the same [base_name] but different [id]s.
+    Two varibles can have the same [base_name] but different [id]s:
+    For example, "x" in one scope is not the same as "x" in another scope if they
+    were generated separately.
+
     I maintain the following invariant throughout the program:
     - If variable with [base_name = "x"] is bound in a quantifier, then all free
       occurences of variables with [base_name = "x"] in the body of this quantifier 
@@ -18,21 +21,12 @@ type var = {
   base_name : string;
 }
 
+let fresh_var ?(base="x") () =
+  let n = !global_var_counter in
+  incr global_var_counter;
+  { id = n; base_name = base }
 
-let eq_var v1 v2 = v1.id = v2.id
-
-
-(** For paralell substitution *)
-module VarMap = Map.Make(struct
-  type t = var
-  let compare v1 v2 = compare v1.base_name v2.base_name (* v1.base_name v2.base_name *)
-end)
-
-(** For set of variables *)
-module VarSet = Set.Make(struct
-  type t = var
-  let compare v1 v2 = compare v1.id v2.id
-end)
+let eq_var v1 v2 = (v1.id = v2.id)
 
 type sym = string
 
@@ -50,6 +44,11 @@ module type Theory = sig
   type axiom
   val axiom : axiom -> formula
 end
+
+(* -------------------------------------------------------------------------- *)
+(*                 1. Free-variable checks                                    *)
+(* -------------------------------------------------------------------------- *)
+
 
 (** Check if [x] is free in term [t]. *)
 let rec free_in_term x t =
@@ -70,10 +69,19 @@ let rec free_in_formula x phi =
       if eq_var x y then false (* or eq_var_name ? *)
       else free_in_formula x phi
 
-let fresh_var ?(base="x") () =
-  let n = !global_var_counter in
-  incr global_var_counter;
-  { id = n; base_name = base }
+
+
+(* -------------------------------------------------------------------------- *)
+(*       2. Substitution with capture avoidance (parallel version)            *)
+(* -------------------------------------------------------------------------- *)
+
+
+(** For set of variables *)
+module VarSet = Set.Make(struct
+  type t = var
+  let compare v1 v2 = compare v1.id v2.id
+end)
+
 
 (** Utilities to collect all free variables in a term/formula (used for renaming). *)
 let rec fv_term t : VarSet.t =
@@ -98,6 +106,12 @@ let rec fv_formula phi =
   | All(x, phi) ->
       VarSet.remove x (fv_formula phi) (* using invariant *)
 
+(** For paralell substitution *)
+module VarMap = Map.Make(struct
+  type t = var
+  let compare v1 v2 = compare v1.base_name v2.base_name (* v1.base_name v2.base_name *)
+end)
+
 (** [psubst_in_term map t] replaces each variable in [map] with its image, 
     *in parallel*, in the term [t]. *)
 let rec psubst_in_term smap t =
@@ -113,12 +127,27 @@ let rec psubst_in_term smap t =
 
 module StringSet = Set.Make(String)
 
-(** In order to avoid capturing variables, we may need to rename bound variables. 
-    The logic here follows the standard 3-case approach:
-    1) If the bound variable is in [smap]'s domain, do nothing (no substitution).
-    2) If the bound variable is *not* in the domain but *does not* occur free
-       in any substituted term, we just recurse.
-    3) If it *does* occur free in some substituted term, we rename it to a fresh var. *)
+(** Helper that picks a fresh var name base that does not clash
+    with a set of used base names. *)
+let pick_fresh_base (base : string) (used : StringSet.t) : var =
+  let rec loop attempt i =
+    let candidate =
+      if i = 0 then attempt
+      else if i = 1 then Printf.sprintf "%s'" attempt
+      else if i = 2 then Printf.sprintf "%s''" attempt
+      else Printf.sprintf "%s_%d" attempt (i-2)
+    in
+    if StringSet.mem candidate used then
+      loop attempt (i + 1)
+    else
+      let v = { id = !global_var_counter; base_name = candidate } in
+      incr global_var_counter;
+      v
+  in
+  loop base 0
+
+(** [psubst_in_formula smap phi] performs parallel substitution on [phi],
+    avoiding variable capture by alpha-renaming bound variables when necessary. *)
 let rec psubst_in_formula smap phi =
   let rec go phi =
     match phi with
@@ -145,47 +174,24 @@ let rec psubst_in_formula smap phi =
           let all_vars_to_avoid = VarSet.union all_subst_vars free_vars_body in
 
           if VarSet.mem y all_subst_vars then
-            (* We rename y -> y_something. Then apply smap to the renamed body. *)
-            (* let y' = fresh_var ~base:(y.base_name^string_of_int !global_var_counter) () in
-            let rename_map = VarMap.singleton y (Var y') in
-            let body_renamed = psubst_in_formula rename_map body in
-            All(y', go body_renamed) *)
+            (* rename y to avoid capture *)
             rename_and_go y body all_vars_to_avoid
           else
-            (* case 2: y is not in smap's domain and also not free in sub. Just recurse. *)
             All(y, go body)
 
   and rename_and_go (y : var) (body : formula) (vars_to_avoid : VarSet.t) =
-  (* We rename y to a brand-new var y'. 
-    y' must have a base name not in the base names of 'vars_to_avoid'. *)
-  let used_base_names =
-    VarSet.fold (fun v acc -> StringSet.add v.base_name acc)
-                vars_to_avoid
-                StringSet.empty
-  in
-
-  let y' = pick_fresh_base y.base_name used_base_names in
-  (* Now rename the old bound variable [y -> y'] in the body, THEN do 'go' on the result.*)
-  let rename_map = VarMap.singleton y (Var y') in
-  let body_renamed = psubst_in_formula rename_map body in
-  All(y', go body_renamed)
-
-  and pick_fresh_base (base : string) (used : StringSet.t) : var =
-  (* Try base, base', base'', base_1, etc., until we find a textual name 
-    that is not in the set [used]. Then call fresh_var on it. *)
-  let rec loop attempt i =
-    let candidate =
-      if i = 0 then attempt
-      else if i = 1 then Printf.sprintf "%s'" attempt
-      else if i = 2 then Printf.sprintf "%s''" attempt
-      else Printf.sprintf "%s_%d" attempt (i-2)
+    let used_base_names =
+      VarSet.fold (fun v acc -> StringSet.add v.base_name acc)
+                  vars_to_avoid
+                  StringSet.empty
     in
-    if StringSet.mem candidate used then
-      loop attempt (i + 1)
-    else
-      fresh_var ~base:candidate ()
-  in
-  loop base 0
+
+    let y' = pick_fresh_base y.base_name used_base_names in
+    (* rename y in body, then proceed *)
+    let rename_map = VarMap.singleton y (Var y') in
+    let body_renamed = psubst_in_formula rename_map body in
+    All(y', go body_renamed)
+
 
   in
   go phi
@@ -196,13 +202,41 @@ let subst_in_term x t t' =
 let subst_in_formula x t phi =
   psubst_in_formula (VarMap.singleton x t) phi
 
-let concat_parentheses s = "(" ^ s ^ ")"
+(* -------------------------------------------------------------------------- *)
+(*        3. String/printing support, with infix printing for = and +         *)
+(* -------------------------------------------------------------------------- *)
+
+let concat_parentheses s = 
+  "(" ^ s ^ ")"
 
 let string_of_var v =
   v.base_name
+
+
+(** We will treat certain function symbols as infix if they have exactly two sub-terms. *)
+let is_infix_fun s =
+  match s with
+  | "+" | "-" -> true
+  | _   -> false
+    
+(** We will treat certain relation symbols as infix if they have exactly two sub-terms. *)
+let is_infix_rel s =
+  match s with
+  | "=" -> true
+  | _   -> false
+
+
+(** Convert a term to its string representation, using infix notation for
+    e.g. [a + b] if [s = "+"]. *)
 let rec string_of_term t =
   match t with
-  | Var v -> string_of_var v
+  | Var v -> 
+      string_of_var v
+  | Sym(s, [t1; t2]) when is_infix_fun s ->
+      (* (t1 + t2) with parentheses to be unambiguous in bigger expressions. *)
+      let left_str  = string_of_term t1 in
+      let right_str = string_of_term t2 in
+      "(" ^ left_str ^ " " ^ s ^ " " ^ right_str ^ ")"
   | Sym(s, ts) ->
       s ^
       if ts = [] then ""
@@ -214,6 +248,10 @@ let rec string_of_term t =
 let rec string_of_formula f =
   match f with
   | Bot -> "⊥"
+  | Rel(r, [t1; t2]) when is_infix_rel r ->
+      let left_str  = string_of_term t1 in
+      let right_str = string_of_term t2 in
+      "(" ^ left_str ^ " " ^ r ^ " " ^ right_str ^ ")"
   | Rel(r, ts) -> 
       r ^
       if ts = [] then ""
@@ -233,7 +271,16 @@ let rec string_of_formula f =
   | All(v, f) ->
       "∀" ^ string_of_var v ^ "." ^ string_of_formula f
 
-(** alpha_eq_term: structural equality of terms (no binding in terms) *)
+let pp_print_formula fmtr f =
+  Format.pp_print_string fmtr (string_of_formula f)
+
+(* -------------------------------------------------------------------------- *)
+(*    4. Equality of formulas (alpha-equivalence)                             *)
+(* -------------------------------------------------------------------------- *)
+
+      
+(** [alpha_eq_term] does structural equality on terms. We do compare IDs to ensure distinct
+    variables are not considered equal. *)
 let rec alpha_eq_term (t1 : term) (t2 : term) : bool =
   match t1, t2 with
   | Var x, Var y -> x.id = y.id
@@ -266,12 +313,11 @@ let rec alpha_eq_formula (phi : formula) (psi : formula) : bool =
 let eq_formula (phi : formula) (psi : formula) : bool =
   alpha_eq_formula phi psi
 
-let pp_print_formula fmtr f =
-  Format.pp_print_string fmtr (string_of_formula f)
-
 
 module Make (T : Theory) = struct
 
+  (** We represent a theorem as a pair ([Γ], φ) meaning "from assumptions Γ
+      we derive φ". *)
   type theorem = formula list * formula
 
 
@@ -308,7 +354,7 @@ module Make (T : Theory) = struct
   let difference_of_lists xs ys =
     List.filter (fun x -> not (List.mem x ys)) xs
   
-    let by_assumption f = ([f], f)
+  let by_assumption f = ([f], f)
 
   let imp_i f thm = 
     let gamma = assumptions thm in
